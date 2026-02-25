@@ -1,0 +1,73 @@
+/* Fuente general del sitio */
+body {
+  font-family: 'Roboto', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f6f8;
+}
+
+/* Estilo del encabezado */
+header {
+  background: rgb(33,133,219);
+  color: white;
+  padding: 20px 0;
+  text-align: center;
+}
+
+/* Contenedor general */
+.container {
+  max-width: 500px;
+  margin: 40px auto;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+/* Estilos de formulario */
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  margin-top: 10px;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+input[type="number"] {
+  padding: 8px;
+  font-size: 1rem;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Botón de envío */
+input[type="submit"] {
+  background: rgb(33,133,219);
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s;
+  min-width: 150px;
+  align-self: center;
+  margin-bottom: 20px;  /* espacio debajo del botón */
+}
+
+input[type="submit"]:hover {
+  background: rgb(1, 18, 180);
+}
+
+/* Mensaje de resultado */
+.resultado {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #e8f0ff;
+  border-left: 5px solid rgb(33, 133, 219);
+  display: none;
+}

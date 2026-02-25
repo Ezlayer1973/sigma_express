@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Consulta de Expediente</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+
+</head>
+<body>
+
+<header>
+  <h1>Municipalidad de San Salvador – Entre Ríos</h1>
+</header>
+
+<div class="container">
+  <form id="formulario">
+    <label for="expediente">Número de Expediente:</label>
+    <input type="number" id="expediente" name="expediente" required>
+
+    <label for="dni">DNI o CUIT sin guiones del iniciador:</label>
+    <input type="number" id="dni" name="dni" required>
+
+    <input type="submit" value="Consultar">
+  </form>
+
+  <div class="resultado" id="resultado"></div>
+  <div class="error" id="error"></div>
+</div>
+
+<script src="JS/funciones.js"></script>
+</body>
+</html>
