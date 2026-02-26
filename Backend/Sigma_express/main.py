@@ -39,7 +39,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 #app.include_router(api_usuarios.router)
+from routers import api_expedientes, api_rubros, api_articulos, api_clientes, api_ventas
+
 app.include_router(api_expedientes.router)
+app.include_router(api_rubros.router)
+app.include_router(api_articulos.router)
+app.include_router(api_clientes.router)
+app.include_router(api_ventas.router)
 #app.include_router(api_auth.router)
 #app.include_router(api_pedidos.router)
 #endregion

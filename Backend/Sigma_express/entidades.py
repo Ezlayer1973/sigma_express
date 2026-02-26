@@ -94,6 +94,45 @@ class e_articuloapp(BaseModel):
     um: str
     libre: Decimal
     
+    # ── POS ──────────────────────────────────────────
+
+class e_rubro(BaseModel):
+    descripcion: str
+    baja: bool = False
+
+class e_articulo(BaseModel):
+    descripcion: str
+    cod_rubro: int
+    precio: float
+    codigo_barra: Optional[str] = None
+    baja: bool = False
+
+class e_cliente(BaseModel):
+    apellynom: str
+    tipo_doc: Optional[str] = None
+    nro_doc: Optional[str] = None
+    telefono: Optional[str] = None
+    email: Optional[str] = None
+    direccion: Optional[str] = None
+    baja: bool = False
+
+class e_venta_pago(BaseModel):
+    forma_pago: str          # 'efectivo' o 'tarjeta'
+    monto: float
+    nro_tarjeta: Optional[str] = None
+    cuotas: int = 1
+
+class e_venta_detalle(BaseModel):
+    cod_articulo: int
+    cantidad: float
+    precio_unitario: float
+
+class e_venta(BaseModel):
+    cod_cliente: Optional[int] = None
+    observaciones: Optional[str] = None
+    detalle: list[e_venta_detalle]   # los ítems de la venta
+    pagos: list[e_venta_pago]        # efectivo y/o tarjeta
+    
     model_config = ConfigDict(arbitrary_types_allowed=True)
     
       
