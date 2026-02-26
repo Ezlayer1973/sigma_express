@@ -256,6 +256,10 @@
       <div class="topbar-title" id="topbar-title">Inicio</div>
       <div class="topbar-breadcrumb" id="topbar-breadcrumb">sigma_express / inicio</div>
     </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-size:13px;color:var(--muted)">👤 <span id="topbar-usuario"></span></span>
+      <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px" onclick="logout()">Salir</button>
+    </div>
   </div>
 
   <div class="content">
@@ -509,6 +513,31 @@
 <div class="toast-wrap" id="toasts"></div>
 
 <script>
+ // ── AUTENTICACIÓN ───────────────────────────────
+const token = sessionStorage.getItem('token');
+const usuarioLogueado = sessionStorage.getItem('usuario');
+
+if (!token) {
+  window.location.href = 'login.html';
+}
+
+// Mostrar usuario en topbar
+document.getElementById('topbar-usuario').textContent = usuarioLogueado || '';
+
+function logout() {
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('usuario');
+  window.location.href = 'login.html';
+}
+
+// Agregar token a todos los fetch automáticamente
+const _fetch = window.fetch;
+window.fetch = function(url, options = {}) {
+  options.headers = options.headers || {};
+  if (token) options.headers['Authorization'] = `Bearer ${token}`;
+  return _fetch(url, options);
+
+};
   const API = 'http://127.0.0.1:8000';
 
   // ── NAVEGACIÓN ──────────────────────────────────
