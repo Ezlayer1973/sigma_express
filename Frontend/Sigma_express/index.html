@@ -366,12 +366,36 @@
       </div>
     </div>
 
-    <!-- CLIENTES placeholder -->
+    <!-- CLIENTES -->
     <div class="panel" id="panel-clientes">
       <div class="panel-header">
-        <div><div class="panel-title">👥 Clientes</div><div class="panel-subtitle">Próximamente</div></div>
+        <div>
+          <div class="panel-title">👥 Clientes</div>
+          <div class="panel-subtitle">Alta, baja y modificación de clientes</div>
+        </div>
+        <button class="btn btn-primary" onclick="abrirNuevoCliente()">＋ Nuevo cliente</button>
       </div>
-      <div class="card"><div class="card-body"><div class="empty"><div class="empty-icon">🚧</div><p>Este módulo se habilitará en el próximo paso.</p></div></div></div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:70px">Código</th>
+                <th>Apellido y Nombre</th>
+                <th style="width:100px">Doc</th>
+                <th>Teléfono</th>
+                <th>Email</th>
+                <th style="width:100px">Estado</th>
+                <th style="width:120px">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-clientes">
+              <tr><td colspan="7"><div class="empty"><div class="empty-icon">⏳</div><p>Cargando...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- NUEVA VENTA placeholder -->
@@ -405,6 +429,50 @@
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="cerrarModalRubro()">Cancelar</button>
       <button class="btn btn-primary" onclick="guardarEdicionRubro()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVO / EDITAR CLIENTE -->
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title" id="modal-cliente-title">➕ Nuevo Cliente</div>
+    <input type="hidden" id="cli-id" />
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="form-label">Apellido y Nombre *</label>
+        <input class="form-input" type="text" id="cli-apellynom" placeholder="Ej: García Juan" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo de documento</label>
+        <select class="form-input" id="cli-tipodoc">
+          <option value="">Sin documento</option>
+          <option value="DNI">DNI</option>
+          <option value="CUIT">CUIT</option>
+          <option value="CUIL">CUIL</option>
+          <option value="PAS">Pasaporte</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Número de documento</label>
+        <input class="form-input" type="text" id="cli-nrodoc" placeholder="Ej: 28.123.456" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Teléfono</label>
+        <input class="form-input" type="text" id="cli-telefono" placeholder="Ej: 11-1234-5678" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="cli-email" placeholder="Ej: juan@mail.com" />
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="form-label">Dirección</label>
+        <input class="form-input" type="text" id="cli-direccion" placeholder="Ej: Av. Corrientes 1234, CABA" />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="cerrarModalCliente()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarCliente()">Guardar</button>
     </div>
   </div>
 </div>
@@ -465,6 +533,7 @@
     });
     if (name === 'rubros')    cargarRubros();
     if (name === 'articulos') { cargarRubrosSelect('art-rubro'); cargarArticulos(); }
+    if (name === 'clientes')  cargarClientes();
   }
 
   function toggleGroup(name) {
@@ -736,6 +805,119 @@
 
   document.getElementById('art-desc').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') crearArticulo();
+  });
+
+  // ── CLIENTES ────────────────────────────────────
+  async function cargarClientes() {
+    const tbody = document.getElementById('tabla-clientes');
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">⏳</div><p>Cargando...</p></div></td></tr>`;
+    try {
+      const res = await fetch(`${API}/clientes/`);
+      const data = await res.json();
+      const clientes = data.datos;
+      if (!clientes || clientes.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">👥</div><p>No hay clientes cargados todavía.</p></div></td></tr>`;
+        return;
+      }
+      tbody.innerHTML = clientes.map(c => `
+        <tr>
+          <td class="td-code">#${c[0]}</td>
+          <td style="font-weight:500">${c[1]}</td>
+          <td><span style="font-size:12px;color:var(--muted)">${c[2] ? c[2]+' '+c[3] : '-'}</span></td>
+          <td style="font-size:13px">${c[4] || '-'}</td>
+          <td style="font-size:13px;color:var(--muted)">${c[5] || '-'}</td>
+          <td><span class="badge ${c[8] ? 'badge-inactive' : 'badge-active'}">${c[8] ? '● Baja' : '● Activo'}</span></td>
+          <td style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm" onclick="abrirEditarCliente(${c[0]}, '${(c[1]||'').replace(/'/g,"\\'")}', '${c[2]||''}', '${c[3]||''}', '${c[4]||''}', '${c[5]||''}', '${(c[6]||'').replace(/'/g,"\\'")}')">✏️</button>
+            <button class="btn btn-danger btn-sm" onclick="eliminarCliente(${c[0]}, '${(c[1]||'').replace(/'/g,"\\'")}')">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+    } catch (ex) {
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">⚠️</div><p>Error al conectar con el servidor.</p></div></td></tr>`;
+      toast('Error al conectar con la API', 'error');
+    }
+  }
+
+function abrirNuevoCliente() {
+    document.getElementById('cli-id').value = '';
+    document.getElementById('cli-apellynom').value = '';
+    document.getElementById('cli-tipodoc').value = '';
+    document.getElementById('cli-nrodoc').value = '';
+    document.getElementById('cli-telefono').value = '';
+    document.getElementById('cli-email').value = '';
+    document.getElementById('cli-direccion').value = '';
+    document.getElementById('modal-cliente-title').textContent = '➕ Nuevo Cliente';
+    document.getElementById('modal-cliente').classList.add('open');
+    setTimeout(() => document.getElementById('cli-apellynom').focus(), 100);
+  }
+
+  function abrirEditarCliente(id, apellynom, tipodoc, nrodoc, telefono, email, direccion) {
+    document.getElementById('cli-id').value = id;
+    document.getElementById('cli-apellynom').value = apellynom;
+    document.getElementById('cli-tipodoc').value = tipodoc;
+    document.getElementById('cli-nrodoc').value = nrodoc;
+    document.getElementById('cli-telefono').value = telefono;
+    document.getElementById('cli-email').value = email;
+    document.getElementById('cli-direccion').value = direccion;
+    document.getElementById('modal-cliente-title').textContent = '✏️ Editar Cliente';
+    document.getElementById('modal-cliente').classList.add('open');
+  }
+
+  function cerrarModalCliente() {
+    document.getElementById('modal-cliente').classList.remove('open');
+  }
+
+  async function guardarCliente() {
+    const id       = document.getElementById('cli-id').value;
+    const apellynom = document.getElementById('cli-apellynom').value.trim();
+    const tipodoc  = document.getElementById('cli-tipodoc').value;
+    const nrodoc   = document.getElementById('cli-nrodoc').value.trim();
+    const telefono = document.getElementById('cli-telefono').value.trim();
+    const email    = document.getElementById('cli-email').value.trim();
+    const direccion = document.getElementById('cli-direccion').value.trim();
+
+    if (!apellynom) { toast('El apellido y nombre es obligatorio', 'error'); return; }
+
+    const body = JSON.stringify({
+      apellynom, tipo_doc: tipodoc || null, nro_doc: nrodoc || null,
+      telefono: telefono || null, email: email || null,
+      direccion: direccion || null, baja: false
+    });
+
+    try {
+      const url    = id ? `${API}/clientes/${id}` : `${API}/clientes/`;
+      const method = id ? 'PUT' : 'POST';
+      const res = await fetch(url, { method, headers: {'Content-Type': 'application/json'}, body });
+      if (res.ok) {
+        toast(id ? 'Cliente actualizado' : 'Cliente creado correctamente', 'success');
+        cerrarModalCliente();
+        cargarClientes();
+      } else {
+        toast('Error al guardar el cliente', 'error');
+      }
+    } catch (ex) {
+      toast('Error al conectar con la API', 'error');
+    }
+  }
+
+  async function eliminarCliente(id, nombre) {
+    if (!confirm(`¿Dar de baja al cliente "${nombre}"?`)) return;
+    try {
+      const res = await fetch(`${API}/clientes/${id}`, { method: 'DELETE' });
+      if (res.status === 204 || res.ok) {
+        toast(`Cliente "${nombre}" dado de baja`, 'success');
+        cargarClientes();
+      } else {
+        toast('Error al eliminar', 'error');
+      }
+    } catch (ex) {
+      toast('Error al conectar con la API', 'error');
+    }
+  }
+
+  document.getElementById('modal-cliente').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModalCliente();
   });
 
 </script>
