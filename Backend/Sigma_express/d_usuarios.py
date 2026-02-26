@@ -99,3 +99,19 @@ def d_eliminarusuario(connection, v_codigo):
 
         finally:
             cursor.close()
+            
+def d_unusuario_login(connection, v_usuario):
+    if connection:
+        try:
+            cursor = connection.cursor()
+            cursor.execute("""
+                SELECT codigo, apellynom, clave, usuario
+                FROM usuarios
+                WHERE baja = False AND usuario = %s;
+            """, (v_usuario,))
+            resultado = cursor.fetchone()
+            cursor.close()
+            return resultado
+        except (Exception, psycopg2.Error) as ex:
+            print("Error al buscar usuario para login", ex)
+            return None            

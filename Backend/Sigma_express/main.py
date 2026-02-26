@@ -39,8 +39,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 #app.include_router(api_usuarios.router)
-from routers import api_expedientes, api_rubros, api_articulos, api_clientes, api_ventas
+from routers import api_expedientes, api_rubros, api_articulos, api_clientes, api_ventas, api_auth
 
+app.include_router(api_auth.router)
 app.include_router(api_expedientes.router)
 app.include_router(api_rubros.router)
 app.include_router(api_articulos.router)
@@ -62,7 +63,7 @@ def menuPrincipal():
             print(dtoc(date()), mitime())
             print("------------- Menú Principal -------------")
             print("0.- Salir")            
-            print("1.- Api Expedientes")
+            print("1.- Pos Sigma Express")
             print("-----------------------------------------")
             
             v_opcion = int(input("Seleccione una opción: "))
