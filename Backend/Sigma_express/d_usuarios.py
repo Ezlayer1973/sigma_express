@@ -104,11 +104,8 @@ def d_unusuario_login(connection, v_usuario):
     if connection:
         try:
             cursor = connection.cursor()
-            cursor.execute("""
-                SELECT codigo, apellynom, clave, usuario
-                FROM usuarios
-                WHERE baja = False AND usuario = %s;
-            """, (v_usuario,))
+            cursor.execute(""" SELECT codigo, apellynom, clave, usuario FROM usuarios WHERE baja = False 
+                           AND LOWER(usuario) = LOWER(%s);""", (v_usuario,))
             resultado = cursor.fetchone()
             cursor.close()
             return resultado

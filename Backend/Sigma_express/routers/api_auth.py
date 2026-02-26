@@ -2,6 +2,7 @@ import sys, os, base64
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from decouple import config
+import bcrypt  # agregá este import arriba
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(script_dir, '..'))
@@ -37,15 +38,14 @@ async def login(user_credentials: OAuth2PasswordRequestForm = Depends()):
 
         # c_usuario = (codigo, apellynom, clave, usuario)
         v_key = str_to_key(v_llave)
-        clave_almacenada = c_usuario[2]
-        v_bd = desencripta(base64.urlsafe_b64decode(clave_almacenada), v_key)
+        clave_almacenada = c_usuario[2]       
 
-        if v_bd != user_credentials.password:
+        if not bcrypt.checkpw(user_credentials.password.encode(), clave_almacenada.encode()):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Contraseña incorrecta"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Contraseña incorrecta"
             )
-
+        
         v_token = create_access_token(data={
             "codigo": c_usuario[0],
             "usuario": c_usuario[3],
