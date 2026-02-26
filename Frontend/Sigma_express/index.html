@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sigma Express — POS</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sidebar-w: 240px;
+    --bg: #f0ede8;
+    --sidebar-bg: #1c1917;
+    --sidebar-hover: #292524;
+    --sidebar-active: #ea580c;
+    --card: #ffffff;
+    --border: #e2ddd8;
+    --accent: #ea580c;
+    --accent-hover: #c2410c;
+    --text: #1c1917;
+    --muted: #78716c;
+    --success: #16a34a;
+    --danger: #dc2626;
+    --input-bg: #fafaf9;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Figtree', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: var(--sidebar-w); background: var(--sidebar-bg);
+    display: flex; flex-direction: column;
+    position: fixed; top:0; left:0; height:100vh;
+    z-index: 100; overflow-y: auto;
+  }
+  .sidebar-logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid #292524;
+  }
+  .logo-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 4px; }
+  .logo-name { font-size: 18px; font-weight: 900; color: #fff; line-height: 1.1; }
+  .logo-sub { font-size: 11px; color: #78716c; margin-top: 2px; }
+
+  .sidebar-section { padding: 20px 12px 8px; }
+  .sidebar-section-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em;
+    color: #57534e; font-weight: 600; padding: 0 8px; margin-bottom: 6px;
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 8px; cursor: pointer;
+    color: #a8a29e; font-size: 13.5px; font-weight: 500;
+    transition: all 0.15s; user-select: none;
+    border: none; background: none; width: 100%; text-align: left;
+  }
+  .nav-item:hover { background: var(--sidebar-hover); color: #fff; }
+  .nav-item.active { background: var(--accent); color: #fff; }
+  .nav-item .nav-icon { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
+
+  .nav-group { margin-bottom: 4px; }
+  .nav-group-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 8px; cursor: pointer;
+    color: #a8a29e; font-size: 13.5px; font-weight: 500;
+    transition: all 0.15s; user-select: none;
+  }
+  .nav-group-header:hover { background: var(--sidebar-hover); color: #fff; }
+  .nav-group-header .chevron { margin-left: auto; font-size: 11px; transition: transform 0.2s; }
+  .nav-group.open .nav-group-header .chevron { transform: rotate(180deg); }
+  .nav-group.open .nav-group-header { color: #fff; }
+
+  .nav-children { overflow: hidden; max-height: 0; transition: max-height 0.3s ease; }
+  .nav-group.open .nav-children { max-height: 300px; }
+  .nav-children .nav-item { padding-left: 42px; font-size: 13px; }
+
+  .sidebar-footer { margin-top: auto; padding: 16px 12px; border-top: 1px solid #292524; }
+  .sidebar-footer .version { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #57534e; }
+
+  /* MAIN */
+  .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+  .topbar {
+    background: var(--card); border-bottom: 1px solid var(--border);
+    padding: 0 32px; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top:0; z-index:50;
+  }
+  .topbar-title { font-size: 15px; font-weight: 700; color: var(--text); }
+  .topbar-breadcrumb { font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+  .content { padding: 32px; flex: 1; }
+
+  /* WELCOME */
+  .welcome { text-align: center; padding: 80px 32px; }
+  .welcome-icon { font-size: 56px; margin-bottom: 20px; }
+  .welcome h2 { font-size: 1.8rem; font-weight: 800; margin-bottom: 8px; }
+  .welcome p { color: var(--muted); font-size: 14px; }
+
+  /* PANEL */
+  .panel { display: none; animation: fadeIn 0.25s ease; }
+  .panel.active { display: block; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  .panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+  .panel-title { font-size: 1.4rem; font-weight: 800; }
+  .panel-subtitle { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  /* BUTTON */
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 9px 18px; border-radius: 8px; font-size: 13.5px;
+    font-weight: 600; cursor: pointer; border: none;
+    font-family: 'Figtree', sans-serif; transition: all 0.15s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--bg); color: var(--text); }
+  .btn-danger { background: #fee2e2; color: var(--danger); border: 1px solid #fecaca; }
+  .btn-danger:hover { background: #fecaca; }
+  .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 6px; }
+
+  /* CARD */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .card-body { padding: 24px; }
+
+  /* FORM */
+  .form-group { margin-bottom: 18px; }
+  .form-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .form-input {
+    width: 100%; padding: 10px 14px; border: 1.5px solid var(--border);
+    border-radius: 8px; font-size: 14px; font-family: 'Figtree', sans-serif;
+    background: var(--input-bg); color: var(--text); transition: border-color 0.15s;
+    outline: none;
+  }
+  .form-input:focus { border-color: var(--accent); }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  thead th {
+    text-align: left; padding: 10px 16px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted);
+    background: #faf9f8; border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-bottom: 1px solid #f5f3f0; transition: background 0.1s; }
+  tbody tr:hover { background: #faf9f8; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 12px 16px; }
+  .td-code { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+
+  /* BADGE */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .badge-active { background: #dcfce7; color: #15803d; }
+  .badge-inactive { background: #fee2e2; color: #991b1b; }
+
+  /* TOAST */
+  .toast-wrap { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 8px; z-index: 999; }
+  .toast {
+    background: var(--text); color: #fff; padding: 12px 18px;
+    border-radius: 10px; font-size: 13px; font-weight: 500;
+    display: flex; align-items: center; gap: 8px;
+    animation: slideUp 0.3s ease;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--danger); }
+  @keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 48px; color: var(--muted); }
+  .empty-icon { font-size: 36px; margin-bottom: 12px; }
+  .empty p { font-size: 13px; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    display: none; align-items: center; justify-content: center; z-index: 200;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card); border-radius: 16px; padding: 28px;
+    width: 100%; max-width: 420px; margin: 16px;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal-title { font-size: 16px; font-weight: 800; margin-bottom: 20px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-tag">POS</div>
+    <div class="logo-name">Sigma<br>Express</div>
+    <div class="logo-sub">v1.0</div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Principal</div>
+    <button class="nav-item" onclick="showPanel('welcome')">
+      <span class="nav-icon">🏠</span> Inicio
+    </button>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Tablas</div>
+
+    <div class="nav-group open" id="group-tablas">
+      <div class="nav-group-header" onclick="toggleGroup('tablas')">
+        <span class="nav-icon">🗂️</span>
+        <span>Tablas maestras</span>
+        <span class="chevron">▾</span>
+      </div>
+      <div class="nav-children">
+        <button class="nav-item" onclick="showPanel('rubros')">
+          <span class="nav-icon">🏷️</span> Rubros
+        </button>
+        <button class="nav-item" onclick="showPanel('articulos')">
+          <span class="nav-icon">📦</span> Artículos
+        </button>
+        <button class="nav-item" onclick="showPanel('clientes')">
+          <span class="nav-icon">👥</span> Clientes
+        </button>
+      </div>
+    </div>
+
+    <div class="nav-group" id="group-ventas">
+      <div class="nav-group-header" onclick="toggleGroup('ventas')">
+        <span class="nav-icon">🧾</span>
+        <span>Ventas</span>
+        <span class="chevron">▾</span>
+      </div>
+      <div class="nav-children">
+        <button class="nav-item" onclick="showPanel('nueva-venta')">
+          <span class="nav-icon">➕</span> Nueva venta
+        </button>
+        <button class="nav-item" onclick="showPanel('historial')">
+          <span class="nav-icon">📋</span> Historial
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="version">sigma_express © 2025</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="topbar-title">Inicio</div>
+      <div class="topbar-breadcrumb" id="topbar-breadcrumb">sigma_express / inicio</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- WELCOME -->
+    <div class="panel active" id="panel-welcome">
+      <div class="welcome">
+        <div class="welcome-icon">🧾</div>
+        <h2>Bienvenido a Sigma Express</h2>
+        <p>Seleccioná una opción del menú para comenzar.</p>
+      </div>
+    </div>
+
+    <!-- RUBROS -->
+    <div class="panel" id="panel-rubros">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">🏷️ Rubros</div>
+          <div class="panel-subtitle">Alta, baja y modificación de rubros</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-body">
+          <div style="font-size:13px;font-weight:700;margin-bottom:14px;">Nuevo rubro</div>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end">
+            <div class="form-group" style="margin:0">
+              <input class="form-input" type="text" id="rubro-desc" placeholder="Descripción del rubro..." />
+            </div>
+            <button class="btn btn-primary" onclick="crearRubro()">＋ Agregar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:80px">Código</th>
+                <th>Descripción</th>
+                <th style="width:100px">Estado</th>
+                <th style="width:120px">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-rubros">
+              <tr><td colspan="4"><div class="empty"><div class="empty-icon">⏳</div><p>Cargando...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ARTICULOS -->
+    <div class="panel" id="panel-articulos">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">📦 Artículos</div>
+          <div class="panel-subtitle">Alta, baja y modificación de artículos</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-body">
+          <div style="font-size:13px;font-weight:700;margin-bottom:14px;">Nuevo artículo</div>
+          <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:12px;align-items:end">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">Descripción</label>
+              <input class="form-input" type="text" id="art-desc" placeholder="Nombre del artículo..." />
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">Rubro</label>
+              <select class="form-input" id="art-rubro">
+                <option value="">Cargando...</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">Precio</label>
+              <input class="form-input" type="number" id="art-precio" placeholder="0.00" step="0.01" min="0" />
+            </div>
+            <button class="btn btn-primary" onclick="crearArticulo()" style="height:42px;margin-top:auto">＋ Agregar</button>
+          </div>
+          <div style="margin-top:14px">
+            <label class="form-label">Código de barra (opcional)</label>
+            <input class="form-input" type="text" id="art-codbarra" placeholder="Escaneá o escribí el código..." style="max-width:300px"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:70px">Código</th>
+                <th>Descripción</th>
+                <th>Rubro</th>
+                <th style="width:120px">Precio</th>
+                <th style="width:100px">Estado</th>
+                <th style="width:120px">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-articulos">
+              <tr><td colspan="6"><div class="empty"><div class="empty-icon">⏳</div><p>Cargando...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLIENTES placeholder -->
+    <div class="panel" id="panel-clientes">
+      <div class="panel-header">
+        <div><div class="panel-title">👥 Clientes</div><div class="panel-subtitle">Próximamente</div></div>
+      </div>
+      <div class="card"><div class="card-body"><div class="empty"><div class="empty-icon">🚧</div><p>Este módulo se habilitará en el próximo paso.</p></div></div></div>
+    </div>
+
+    <!-- NUEVA VENTA placeholder -->
+    <div class="panel" id="panel-nueva-venta">
+      <div class="panel-header">
+        <div><div class="panel-title">➕ Nueva Venta</div><div class="panel-subtitle">Próximamente</div></div>
+      </div>
+      <div class="card"><div class="card-body"><div class="empty"><div class="empty-icon">🚧</div><p>Este módulo se habilitará en el próximo paso.</p></div></div></div>
+    </div>
+
+    <!-- HISTORIAL placeholder -->
+    <div class="panel" id="panel-historial">
+      <div class="panel-header">
+        <div><div class="panel-title">📋 Historial de Ventas</div><div class="panel-subtitle">Próximamente</div></div>
+      </div>
+      <div class="card"><div class="card-body"><div class="empty"><div class="empty-icon">🚧</div><p>Este módulo se habilitará en el próximo paso.</p></div></div></div>
+    </div>
+
+  </div>
+</main>
+
+<!-- MODAL EDITAR RUBRO -->
+<div class="modal-overlay" id="modal-editar-rubro">
+  <div class="modal">
+    <div class="modal-title">✏️ Editar Rubro</div>
+    <input type="hidden" id="edit-rubro-id" />
+    <div class="form-group">
+      <label class="form-label">Descripción</label>
+      <input class="form-input" type="text" id="edit-rubro-desc" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="cerrarModalRubro()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEdicionRubro()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR ARTICULO -->
+<div class="modal-overlay" id="modal-editar-art">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title">✏️ Editar Artículo</div>
+    <input type="hidden" id="edit-art-id" />
+    <div class="form-group">
+      <label class="form-label">Descripción</label>
+      <input class="form-input" type="text" id="edit-art-desc" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Rubro</label>
+      <select class="form-input" id="edit-art-rubro"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Precio</label>
+      <input class="form-input" type="number" id="edit-art-precio" step="0.01" min="0" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Código de barra</label>
+      <input class="form-input" type="text" id="edit-art-codbarra" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="cerrarModalArt()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEdicionArt()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+  const API = 'http://127.0.0.1:8000';
+
+  // ── NAVEGACIÓN ──────────────────────────────────
+  const titles = {
+    'welcome':     ['Inicio',            'sigma_express / inicio'],
+    'rubros':      ['Rubros',            'sigma_express / tablas / rubros'],
+    'articulos':   ['Artículos',         'sigma_express / tablas / artículos'],
+    'clientes':    ['Clientes',          'sigma_express / tablas / clientes'],
+    'nueva-venta': ['Nueva Venta',       'sigma_express / ventas / nueva'],
+    'historial':   ['Historial',         'sigma_express / ventas / historial'],
+  };
+
+  function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    const [title, breadcrumb] = titles[name] || [name, name];
+    document.getElementById('topbar-title').textContent = title;
+    document.getElementById('topbar-breadcrumb').textContent = breadcrumb;
+    document.querySelectorAll('.nav-item').forEach(btn => {
+      if (btn.getAttribute('onclick') === `showPanel('${name}')`) btn.classList.add('active');
+    });
+    if (name === 'rubros')    cargarRubros();
+    if (name === 'articulos') { cargarRubrosSelect('art-rubro'); cargarArticulos(); }
+  }
+
+  function toggleGroup(name) {
+    document.getElementById('group-' + name).classList.toggle('open');
+  }
+
+  // ── TOAST ───────────────────────────────────────
+  function toast(msg, type = '') {
+    const wrap = document.getElementById('toasts');
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.textContent = (type === 'success' ? '✓ ' : type === 'error' ? '✕ ' : 'ℹ ') + msg;
+    wrap.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+  }
+
+  // ── RUBROS ──────────────────────────────────────
+  async function cargarRubros() {
+    const tbody = document.getElementById('tabla-rubros');
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty"><div class="empty-icon">⏳</div><p>Cargando...</p></div></td></tr>`;
+    try {
+      const res = await fetch(`${API}/rubros/`);
+      const data = await res.json();
+      const rubros = data.datos;
+      if (!rubros || rubros.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4"><div class="empty"><div class="empty-icon">🏷️</div><p>No hay rubros cargados todavía.</p></div></td></tr>`;
+        return;
+      }
+      tbody.innerHTML = rubros.map(r => `
+        <tr>
+          <td class="td-code">#${r[0]}</td>
+          <td style="font-weight:500">${r[1]}</td>
+          <td><span class="badge ${r[2] ? 'badge-inactive' : 'badge-active'}">${r[2] ? '● Baja' : '● Activo'}</span></td>
+          <td style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm" onclick="abrirEditarRubro(${r[0]}, '${r[1]}')">✏️</button>
+            <button class="btn btn-danger btn-sm" onclick="eliminarRubro(${r[0]}, '${r[1]}')">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+    } catch (ex) {
+      tbody.innerHTML = `<tr><td colspan="4"><div class="empty"><div class="empty-icon">⚠️</div><p>Error al conectar con el servidor.</p></div></td></tr>`;
+      toast('Error al conectar con la API', 'error');
+    }
+  }
+
+  async function crearRubro() {
+    const desc = document.getElementById('rubro-desc').value.trim();
+    if (!desc) { toast('Ingresá una descripción', 'error'); return; }
+    try {
+      const res = await fetch(`${API}/rubros/`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ descripcion: desc, baja: false })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        toast(`Rubro creado con código #${data.codigo}`, 'success');
+        document.getElementById('rubro-desc').value = '';
+        cargarRubros();
+      } else {
+        toast('Error al crear el rubro', 'error');
+      }
+    } catch (ex) {
+      toast('Error al conectar con la API', 'error');
+    }
+  }
+
+  function abrirEditarRubro(id, desc) {
+    document.getElementById('edit-rubro-id').value = id;
+    document.getElementById('edit-rubro-desc').value = desc;
+    document.getElementById('modal-editar-rubro').classList.add('open');
+  }
+
+  function cerrarModalRubro() {
+    document.getElementById('modal-editar-rubro').classList.remove('open');
+  }
+
+  async function guardarEdicionRubro() {
+    const id = document.getElementById('edit-rubro-id').value;
+    const desc = document.getElementById('edit-rubro-desc').value.trim();
+    if (!desc) { toast('Ingresá una descripción', 'error'); return; }
+    try {
+      const res = await fetch(`${API}/rubros/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ descripcion: desc, baja: false })
+      });
+      if (res.ok) {
+        toast('Rubro actualizado', 'success');
+        cerrarModalRubro();
+        cargarRubros();
+      } else {
+        toast('Error al actualizar', 'error');
+      }
+    } catch (ex) {
+      toast('Error al conectar con la API', 'error');
+    }
+  }
+
+  async function eliminarRubro(id, desc) {
+    if (!confirm(`¿Dar de baja el rubro "${desc}"?`)) return;
+    try {
+      const res = await fetch(`${API}/rubros/${id}`, { method: 'DELETE' });
+      if (res.status === 204 || res.ok) {
+        toast(`Rubro "${desc}" dado de baja`, 'success');
+        cargarRubros();
+      } else {
+        toast('Error al eliminar', 'error');
+      }
+    } catch (ex) {
+      toast('Error al conectar con la API', 'error');
+    }
+  }
+
+  document.getElementById('modal-editar-rubro').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModalRubro();
+  });
+
+  document.getElementById('rubro-desc').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') crearRubro();
+  });
+
+  // ── ARTÍCULOS ───────────────────────────────────
+  async function cargarRubrosSelect(selectId) {
+    try {
+      const res = await fetch(`${API}/rubros/`);
+      const data = await res.json();
+      const rubros = data.datos || [];
+      const select = document.getElementById(selectId);
+      select.innerHTML = `<option value="">Seleccioná un rubro...</option>` +
+        rubros.map(r => `<option value="${r[0]}">${r[1]}</option>`).join('');
+    } catch (ex) {
+      toast('Error al cargar rubros', 'error');
+    }
+  }
+
+  async function cargarArticulos() {
+    const tbody = document.getElementById('tabla-articulos');
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">⏳</div><p>Cargando...</p></div></td></tr>`;
+    try {
+      const res = await fetch(`${API}/articulos/`);
+      const data = await res.json();
+      const articulos = data.datos;
+      if (!articulos || articulos.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">📦</div><p>No hay artículos cargados todavía.</p></div></td></tr>`;
+        return;
+      }
+      tbody.innerHTML = articulos.map(a => `
+        <tr>
+          <td class="td-code">#${a[0]}</td>
+          <td style="font-weight:500">${a[1]}</td>
+          <td><span style="font-size:12px;color:var(--muted)">${a[3] || '-'}</span></td>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:13px">$${parseFloat(a[4]).toLocaleString('es-AR', {minimumFractionDigits:2})}</td>
+          <td><span class="badge ${a[7] ? 'badge-inactive' : 'badge-active'}">${a[7] ? '● Baja' : '● Activo'}</span></td>
+          <td style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm" onclick="abrirEditarArt(${a[0]}, '${a[1].replace(/'/g, "\\'")}', ${a[2]}, ${a[4]}, '${(a[5] || '').replace(/'/g, "\\'")}')">✏️</button>
+            <button class="btn btn-danger btn-sm" onclick="eliminarArticulo(${a[0]}, '${a[1].replace(/'/g, "\\'")}')">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+    } catch (ex) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">⚠️</div><p>Error al conectar con el servidor.</p></div></td></tr>`;
+      toast('Error al conectar con la API', 'error');
+    }
+  }
+
+  async function crearArticulo() {
+    const desc   = document.getElementById('art-desc').value.trim();
+    const rubro  = document.getElementById('art-rubro').value;
+    const precio = document.getElementById('art-precio').value;
+    const codBarra = document.getElementById('art-codbarra').value.trim();
+
+    if (!desc)              { toast('Ingresá una descripción', 'error'); return; }
+    if (!rubro)             { toast('Seleccioná un rubro', 'error'); return; }
+    if (!precio || precio <= 0) { toast('Ingresá un precio válido', 'error'); return; }
+
+    try {
+      const res = await fetch(`${API}/articulos/`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          descripcion: desc,
+          cod_rubro: parseInt(rubro),
+          precio: parseFloat(precio),
+          codigo_barra: codBarra || null,
+          baja: false
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        toast(`Artículo creado con código #${data.codigo}`, 'success');
+        document.getElementById('art-desc').value = '';
+        document.getElementById('art-precio').value = '';
+        document.getElementById('art-codbarra').value = '';
+        cargarArticulos();
+      } else {
+        toast('Error al crear el artículo', 'error');
+      }
+    } catch (ex) {
+      toast('Error al conectar con la API', 'error');
+    }
+  }
+
+  async function abrirEditarArt(id, desc, codRubro, precio, codBarra) {
+    document.getElementById('edit-art-id').value = id;
+    document.getElementById('edit-art-desc').value = desc;
+    document.getElementById('edit-art-precio').value = precio;
+    document.getElementById('edit-art-codbarra').value = codBarra;
+    await cargarRubrosSelect('edit-art-rubro');
+    document.getElementById('edit-art-rubro').value = codRubro;
+    document.getElementById('modal-editar-art').classList.add('open');
+  }
+
+  function cerrarModalArt() {
+    document.getElementById('modal-editar-art').classList.remove('open');
+  }
+
+  async function guardarEdicionArt() {
+    const id       = document.getElementById('edit-art-id').value;
+    const desc     = document.getElementById('edit-art-desc').value.trim();
+    const rubro    = document.getElementById('edit-art-rubro').value;
+    const precio   = document.getElementById('edit-art-precio').value;
+    const codBarra = document.getElementById('edit-art-codbarra').value.trim();
+
+    if (!desc) { toast('Ingresá una descripción', 'error'); return; }
+
+    try {
+      const res = await fetch(`${API}/articulos/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          descripcion: desc,
+          cod_rubro: parseInt(rubro),
+          precio: parseFloat(precio),
+          codigo_barra: codBarra || null,
+          baja: false
+        })
+      });
+      if (res.ok) {
+        toast('Artículo actualizado', 'success');
+        cerrarModalArt();
+        cargarArticulos();
+      } else {
+        toast('Error al actualizar', 'error');
+      }
+    } catch (ex) {
+      toast('Error al conectar con la API', 'error');
+    }
+  }
+
+  async function eliminarArticulo(id, desc) {
+    if (!confirm(`¿Dar de baja el artículo "${desc}"?`)) return;
+    try {
+      const res = await fetch(`${API}/articulos/${id}`, { method: 'DELETE' });
+      if (res.status === 204 || res.ok) {
+        toast(`Artículo "${desc}" dado de baja`, 'success');
+        cargarArticulos();
+      } else {
+        toast('Error al eliminar', 'error');
+      }
+    } catch (ex) {
+      toast('Error al conectar con la API', 'error');
+    }
+  }
+
+  document.getElementById('modal-editar-art').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModalArt();
+  });
+
+  document.getElementById('art-desc').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') crearArticulo();
+  });
+
+</script>
+</body>
+</html>
