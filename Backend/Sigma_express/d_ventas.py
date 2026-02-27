@@ -86,3 +86,35 @@ def d_unaventa(connection, codigo):
         return {"cabecera": cabecera, "detalle": detalle, "pagos": pagos}
     except (Exception, psycopg2.Error) as ex:
         print("Error al buscar venta", ex)
+        
+    def d_buscar_ventas(connection, fecha_desde, fecha_hasta, cod_cliente, nro_venta):
+        try:
+            cursor = connection.cursor()
+            query = """
+                SELECT v.codigo, v.fecha, COALESCE(c.apellynom, 'Consumidor Final'), 
+                    v.total, v.estado
+                FROM ventas v
+                LEFT JOIN clientes c ON v.cod_cliente = c.codigo
+                WHERE v.baja = false
+            """
+            params = []
+            if nro_venta:
+                query += " AND v.codigo = %s"
+                params.append(nro_venta)
+            if fecha_desde:
+                query += " AND v.fecha::date >= %s"
+                params.append(fecha_desde)
+            if fecha_hasta:
+                query += " AND v.fecha::date <= %s"
+                params.append(fecha_hasta)
+            if cod_cliente:
+                query += " AND v.cod_cliente = %s"
+                params.append(cod_cliente)
+            query += " ORDER BY v.fecha DESC LIMIT 200;"
+            cursor.execute(query, params)
+            resultado = cursor.fetchall()
+            cursor.close()
+            return resultado
+        except (Exception, psycopg2.Error) as ex:
+            print("Error al buscar ventas", ex)
+            return []

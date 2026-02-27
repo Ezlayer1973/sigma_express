@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Response, status
 from conexion import DAO
 from entidades import e_venta
+from typing import Optional
+from datetime import date
 import sys, os
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -14,6 +16,22 @@ dao = DAO()
 connection = dao.connection
 
 router = APIRouter(prefix="/ventas", tags=["Ventas"])
+
+
+@router.get("/buscar/")
+async def buscar_ventas(
+    response: Response,
+    fecha_desde: Optional[date] = None,
+    fecha_hasta: Optional[date] = None,
+    cod_cliente: Optional[int] = None,
+    nro_venta: Optional[int] = None
+):
+    try:
+        datos = d_buscar_ventas(connection, fecha_desde, fecha_hasta, cod_cliente, nro_venta)
+        return {"datos": datos}
+    except Exception as ex:
+        response.status_code = 500
+        return {"error": str(ex)}
 
 @router.get("/")
 async def listar_ventas(response: Response):
